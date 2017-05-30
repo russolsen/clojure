@@ -536,7 +536,7 @@ static final class TransientVector extends AFn implements ITransientVector, Coun
 		ensureEditable();
 		return cnt;
 	}
-	
+
 	Node ensureEditable(Node node){
 		if(node.edit == root.edit)
 			return node;
@@ -682,7 +682,7 @@ static final class TransientVector extends AFn implements ITransientVector, Coun
 		//note - relies on ensureEditable in nth
 		if(Util.isInteger(arg1))
 			return nth(((Number) arg1).intValue());
-		throw new IllegalArgumentException("Key must be integer");
+		throw new IllegalArgumentException("Key must be integer, not: " + RT.inspect(arg1));
 	}
 
 	public Object nth(int i){

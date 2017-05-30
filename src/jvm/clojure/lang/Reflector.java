@@ -42,7 +42,7 @@ private static RuntimeException throwCauseOrElseException(Exception e) {
 
 private static String noMethodReport(String methodName, Object target){
 	 return "No matching method found: " + methodName
-			+ (target==null?"":" for " + target.getClass());
+			+ (target==null?"":" for " + RT.inspect(target));
 }
 static Object invokeMatchingMethod(String methodName, List methods, Object target, Object[] args)
 		{
@@ -269,7 +269,7 @@ public static Object getInstanceField(Object target, String fieldName) {
 			}
 		}
 	throw new IllegalArgumentException("No matching field found: " + fieldName
-		+ " for " + target.getClass());
+		+ " for " + RT.inspect(target));
 }
 
 public static Object setInstanceField(Object target, String fieldName, Object val) {
@@ -288,7 +288,7 @@ public static Object setInstanceField(Object target, String fieldName, Object va
 		return val;
 		}
 	throw new IllegalArgumentException("No matching field found: " + fieldName
-		+ " for " + target.getClass());
+		+ " for " + RT.inspect(target));
 }
 
 // not used as of Clojure 1.6, but left for runtime compatibility with
@@ -306,7 +306,7 @@ public static Object invokeNoArgInstanceMember(Object target, String name, boole
 			return getInstanceField(target, name);
 		else
 			throw new IllegalArgumentException("No matching field found: " + name
-					+ " for " + target.getClass());
+					+ " for " + RT.inspect(target));
 	} else {
 		List meths = getMethods(c, 0, name, false);
 		if(meths.size() > 0)
@@ -404,7 +404,7 @@ static public List getMethods(Class c, int arity, String name, boolean getStatic
 
 	if(methods.isEmpty())
 		methods.addAll(bridgeMethods);
-	
+
 	if(!getStatics && c.isInterface())
 		{
 		allmethods = Object.class.getMethods();
@@ -446,7 +446,7 @@ static Object boxArg(Class paramType, Object arg){
 			return n.byteValue();
 		}
 	throw new IllegalArgumentException("Unexpected param type, expected: " + paramType +
-	                                   ", given: " + arg.getClass().getName());
+	                                   ", given: " + RT.inspect(arg));
 }
 
 static Object[] boxArgs(Class[] params, Object[] args){

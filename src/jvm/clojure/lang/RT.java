@@ -262,7 +262,7 @@ public static List<String> processCommandLine(String[] args){
 	return arglist;
 }
 
-// duck typing stderr plays nice with e.g. swank 
+// duck typing stderr plays nice with e.g. swank
 public static PrintWriter errPrintWriter(){
     Writer w = (Writer) ERR.deref();
     if (w instanceof PrintWriter) {
@@ -542,9 +542,7 @@ static ISeq seqFrom(Object coll){
 	else if(coll instanceof Map)
 		return seq(((Map) coll).entrySet());
 	else {
-		Class c = coll.getClass();
-		Class sc = c.getSuperclass();
-		throw new IllegalArgumentException("Don't know how to create ISeq from: " + c.getName());
+		throw new IllegalArgumentException("Don't know how to create ISeq from: " + inspect(coll));
 	}
 }
 
@@ -658,7 +656,7 @@ static int countFrom(Object o){
 	else if(o.getClass().isArray())
 		return Array.getLength(o);
 
-	throw new UnsupportedOperationException("count not supported on this type: " + o.getClass().getSimpleName());
+	throw new UnsupportedOperationException("count not supported for this value: " + inspect(o));
 }
 
 static public IPersistentCollection conj(IPersistentCollection coll, Object x){
@@ -826,7 +824,8 @@ static public Object contains(Object coll, Object key){
 		int n = ((Number) key).intValue();
 		return n >= 0 && n < count(coll);
 	}
-	throw new IllegalArgumentException("contains? not supported on type: " + coll.getClass().getName());
+
+	throw new IllegalArgumentException("contains? not supported on this value: " + inspect(coll));
 }
 
 static public Object find(Object coll, Object key){
@@ -900,8 +899,8 @@ static Object nthFrom(Object coll, int n){
 		throw new IndexOutOfBoundsException();
 	}
 	else
-		throw new UnsupportedOperationException(
-				"nth not supported on this type: " + coll.getClass().getSimpleName());
+	  throw new UnsupportedOperationException(
+			"nth not supported on this value: " + inspect(coll));
 }
 
 static public Object nth(Object coll, int n, Object notFound){
@@ -960,7 +959,7 @@ static Object nthFrom(Object coll, int n, Object notFound){
 	}
 	else
 		throw new UnsupportedOperationException(
-				"nth not supported on this type: " + coll.getClass().getSimpleName());
+					"nth not supported on this value: " + inspect(coll));
 }
 
 static public Object assocN(int n, Object val, Object coll){
@@ -1319,7 +1318,7 @@ static public float floatCast(long x){
 static public float floatCast(double x){
 	if(x < -Float.MAX_VALUE || x > Float.MAX_VALUE)
 		throw new IllegalArgumentException("Value out of range for float: " + x);
-	
+
 	return (float) x;
 }
 
@@ -1690,7 +1689,7 @@ static public Object[] toArray(Object coll) {
 		return ret;
 	}
 	else
-		throw Util.runtimeException("Unable to convert: " + coll.getClass() + " to Object[]");
+		throw Util.runtimeException("Unable to convert: " + inspect(coll) + " to Object[]");
 }
 
 static public Object[] seqToArray(ISeq seq){
@@ -2364,5 +2363,95 @@ static public Object[] aclone(Object[] xs){
 	return xs.clone();
 }
 
+static final String DQ = "\"";
+
+static private String formatInspect(String value, String cn) {
+	return String.format("%s <<%s>>", value, cn);
+}
+
+static private boolean isPending(Object x) {
+	if(x instanceof IPending){
+		return ! ((IPending)x).isRealized();
+	}
+	return false;
+}
+
+static private String inspectSeqable(Seqable sq, String prefix, String suffix, boolean truncate){
+  if(truncate) {
+		return formatInspect(prefix + "..." + suffix, sq.getClass().getName());
+	}
+
+	StringBuffer sb = new StringBuffer(prefix);
+  ISeq s = sq.seq();
+
+  for( int i=0; i < 10; i++) {
+		if (s == null)
+		  break;
+
+		if(i > 0) {
+			sb.append(", ");
+		}
+
+		if (isPending(s)) {
+			sb.append("<<pending>>");
+			break;
+		}
+		sb.append(inspect(s.first(), true));
+		s = s.next();
+	}
+
+	if(s != null) {
+		sb.append(" ...");
+	}
+	sb.append(suffix);
+	return sb.toString();
+}
+
+static public String inspect(Object x) {
+	return inspect(x, false);
+}
+
+static public String inspect(Object x, boolean truncate){
+	if(x == null)
+	  return "nil";
+
+	String cn = x.getClass().getName();
+
+	if(isPending(x)){
+		return "unrealized instance of " + cn;
+	}
+
+	if (x instanceof String) {
+		String s = (String)x;
+		if (s.length() < 20) {
+		  return formatInspect(DQ + s+ DQ, "String");
+		} else {
+			return formatInspect(DQ + s.substring(0, 20) + "..." + DQ, "String");
+		}
+	}
+	else if (x instanceof Symbol)
+	  return formatInspect(x.toString(), "Symbol");
+	else if (x instanceof Keyword)
+	  return formatInspect(x.toString(), "Keyword");
+	else if (x instanceof Boolean)
+	  return formatInspect(x.toString(), "Boolean");
+	else if (x instanceof Character)
+		return formatInspect("\\" + x, "Character");
+	else if (x instanceof Number)
+	  return formatInspect(x.toString(), cn);
+	else if (x instanceof IPersistentVector)
+		  return inspectSeqable((Seqable)x, "[", "]", truncate);
+	else if (x instanceof IPersistentList)
+		  return inspectSeqable((Seqable)x, "(", ")", truncate);
+	else if (x instanceof ISeq)
+		  return inspectSeqable((Seqable)x, "(", ")", truncate);
+	else if (x instanceof IPersistentMap)
+			return inspectSeqable((Seqable)x, "{", "}", truncate);
+	else if (x instanceof IPersistentMap)
+			return inspectSeqable((Seqable)x, "#{", "}", truncate);
+	else {
+		return "instance of " + cn;
+	}
+}
 
 }
